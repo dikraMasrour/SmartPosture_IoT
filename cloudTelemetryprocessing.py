@@ -55,7 +55,7 @@ def handle_telemetry(client, userdata, telemetry):
         print('Sending long buzz command ', long_buzz_command)
         mqtt_client.publish(client_command_topic, long_buzz_command, qos=1)
 
-mqtt_client.subscribe(client_telemetry_topic, qos=1)
+mqtt_client.subscribe(client_posturetelemetry_topic, qos=1)
 mqtt_client.on_message = handle_telemetry
 
 
