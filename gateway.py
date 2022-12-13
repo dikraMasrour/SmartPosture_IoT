@@ -112,5 +112,5 @@ while True:
 
         # TODO how to decouple the sending?
 
-    time.sleep(3)
+    time.sleep(3) # TODO match with sending rate of posture telemetry 2s?
 

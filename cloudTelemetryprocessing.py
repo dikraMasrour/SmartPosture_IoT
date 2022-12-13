@@ -10,7 +10,7 @@ path_sitting = 'sitting_standing_data.csv'
 
 if not (os.path.exists(path_posture)):
     with open('posture_data.csv', 'w', newline='') as csvfile:
-        fieldnames = ['timestamp', 'pitch']
+        fieldnames = ['timestamp', 'pitch', 'posture']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -40,14 +40,10 @@ def handle_telemetry(client, userdata, telemetry):
     payload = json.loads(telemetry.payload.decode())
 
     if 'pitch' in payload.keys():
+        posture = 1 # takes 1 if good 0 if bad
+
         OR = payload.get('pitch')
         print('Posture telemetry received: ' , OR)
-
-        with open('posture_data.csv', 'a', newline='') as csvfile:
-            fieldnames = ['timestamp', 'pitch']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            # save to csv
-            writer.writerow(payload)
 
         short_buzz_command = json.dumps({'buzzer' : 'short_buzz'})
         long_buzz_command = json.dumps({'buzzer' : 'long_buzz'})
@@ -57,10 +53,22 @@ def handle_telemetry(client, userdata, telemetry):
         pitch_th_big = -45.00
         if OR > pitch_th_small and OR < pitch_th_big:
             print('Sending short buzz command ', short_buzz_command)
+            posture = 0
             mqtt_client.publish(client_command_topic, short_buzz_command, qos=1)
         elif OR > pitch_th_big:
             print('Sending long buzz command ', long_buzz_command)
+            posture = 0
             mqtt_client.publish(client_command_topic, long_buzz_command, qos=1)
+
+        payload_send1 = {'timestamp': payload['timestamp'],
+                        'pitch':payload['pitch'], 
+                        'posture':posture}
+
+        with open('posture_data.csv', 'a', newline='') as csvfile:
+            fieldnames = ['timestamp', 'pitch', 'posture']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            # save to csv
+            writer.writerow(payload_send1)
 
     elif 'Sitting' in payload.keys():
         state = None # takes 1 if standing and 0 if sitting
@@ -75,7 +83,11 @@ def handle_telemetry(client, userdata, telemetry):
             state = 0 # sitting
             print('Sitting state!')
         
-        payload_send = {'timestamp': payload['timestamp'], 'Acc_y':payload['Sitting'][0], 'Acc_z':payload['Sitting'][1], 'state': state}
+        payload_send = {'timestamp': payload['timestamp'],
+                        'Acc_y':payload['Sitting'][0], 
+                        'Acc_z':payload['Sitting'][1], 
+                        'state': state}
+                        
         with open('sitting_standing_data.csv', 'a', newline='') as csvfile:
             fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'state']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -89,5 +101,5 @@ mqtt_client.on_message = handle_telemetry
 
 
 while True:
-    time.sleep(5)     
+    time.sleep(3) # match with gateway
     
