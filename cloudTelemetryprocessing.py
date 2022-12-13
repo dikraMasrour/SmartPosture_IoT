@@ -26,7 +26,6 @@ mqtt_client.connect('test.mosquitto.org')
 mqtt_client.loop_start()
 
 def handle_telemetry(client, userdata, telemetry):
-    # global STATE
     
     payload = json.loads(telemetry.payload.decode())
 
@@ -43,7 +42,7 @@ def handle_telemetry(client, userdata, telemetry):
         short_buzz_command = json.dumps({'buzzer' : 'short_buzz'})
         long_buzz_command = json.dumps({'buzzer' : 'long_buzz'})
 
-        # pitch thresholds
+        # orientation pitch thresholds
         pitch_th_small = -65.00
         pitch_th_big = -45.00
         if OR > pitch_th_small and OR < pitch_th_big:
@@ -60,9 +59,11 @@ def handle_telemetry(client, userdata, telemetry):
         print('Sitting/standing telemetry received: ' , ST)
 
         if ST[0] > 7.9 and ST[1] < 9.0:
-            state = 1
+            state = 1 # standing
+            print('Standing state !')
         elif ST[1] > 7.9 and ST[0] < 9.0:
-            state = 0
+            state = 0 # sitting
+            print('Sitting state!')
             
         # with open('sitting_standing_data.csv', 'a', newline='') as csvfile:
         #     fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
