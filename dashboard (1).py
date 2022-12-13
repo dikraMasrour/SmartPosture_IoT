@@ -1,38 +1,23 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
+import numpy as np  # np mean, np random
+import pandas as pd  # read csv, df manipulation
+import plotly.express as px  # interactive charts
+from datetime import datetime
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    page_title="Smart Posture Monitor",
+    layout="wide",
+)
 
-original_title = '<p style= "font-weight: bold; font-size: 60px; margin-bottom: 50px">Smart Posture</p>'
-st.markdown(original_title, unsafe_allow_html=True)
+# TODO get data after backend processing
+def get_data() -> pd.DataFrame:
+    return pd.read_csv('posture_data.csv', delimiter=',')
 
-col1, col2, col3, col4 = st.columns(4)
-
-standing_title = '<h3 style= "font-weight: bold;">Standing hours</h3>'
-standing_hours = '<h5 style= "font-weight: thin; color:#808080; margin-bottom: 50px   ">8 hr</h5>'
-sitting_title = '<h3 style= "font-weight: bold;">Sitting hours</h3>'
-sitting_hours = '<h5 style= "font-weight: thin; color:#808080; margin-bottom: 50px   ">8 hr</h5>'
-g_posture_title = '<h3 style= "font-weight: bold; ">Good Posture</h3>'
-g_posture_hours = '<h5 style= "font-weight: thin; color:#808080; margin-bottom: 50px  ">5 hr</h5>'
-b_posture_title = '<h3 style= "font-weight: bold; ">Bad Posture</h3>'
-b_posture_hours = '<h5 style= "font-weight: thin; color:#808080; margin-bottom: 50px  ">4 hr</h5>'
+df = get_data()
 
 
-with col1:
-   st.markdown(standing_title, unsafe_allow_html=True)
-   st.markdown(standing_hours, unsafe_allow_html=True)
-with col2:
-   st.markdown(sitting_title, unsafe_allow_html=True)
-   st.markdown(sitting_hours, unsafe_allow_html=True)
-
-with col3:
-   st.markdown(g_posture_title, unsafe_allow_html=True)
-   st.markdown(g_posture_hours, unsafe_allow_html=True)
-
-with col4:
-   st.markdown(b_posture_title, unsafe_allow_html=True)
-   st.markdown(b_posture_hours, unsafe_allow_html=True)
+# dashboard title
+st.title("Smart Posture Monitor")
 
 #chart 1
 chart_data = pd.DataFrame(
@@ -42,17 +27,35 @@ chart_data = pd.DataFrame(
 #chart 2
 data = np.random.randn(10, 1)
 
-Standing_title = '<h3 style= font-weight: bold; color:Blue; font-size: 15px;">Standing</h3>'
-Sitting_title = '<h3 style= font-weight: bold; color:Blue; font-size: 15px;">Sitting</h3>'
+tab1, tab2 = st.tabs(["Standing data", "Sitting data"])
 
-tab1, tab2 = st.tabs(["Standing", "Sitting"])
 
 with tab1:
-   st.header("Standing")
-   st.line_chart(chart_data)
+   col0, col1, col2, col3= st.columns([1, 2, 2, 2])
+   with col1:
+      st.metric(label='Standing time', value='35min', delta='good')
+   with col2:
+      st.metric(label='Good Posture', value='60%', delta='15%')
+
+   with col3:
+      st.metric(label='Bad Posture', value='40%', delta='-1%')
+
+   # timestamp to datetime
+   datetime_stamp = [datetime.fromtimestamp(ts) for ts in df['timestamp']]
+   fig = px.line(df, x=datetime_stamp, y="pitch", title='Posture data over time')
+
+   st.plotly_chart(fig, use_container_width=True)
+
 
 with tab2:
-   st.header("Sitting")
+   col0, col1, col2, col3= st.columns([1, 2, 2, 2])
+   with col1:
+      st.metric(label='Sitting time', value='1h', delta='too much', delta_color='inverse')
+   with col2:
+      st.metric(label='Good Posture', value='60%', delta='15%')
+   with col3:
+      st.metric(label='Bad Posture', value='40%', delta='-1%')
+
    st.line_chart(data)
 
 
