@@ -5,10 +5,15 @@ import csv
 import pandas as pd
 
 
-# with open('light_data.csv', 'w', newline='') as csvfile:
-#     fieldnames = ['timestamp', 'light']
-#     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-#     writer.writeheader()
+with open('posture_data.csv', 'w', newline='') as csvfile:
+    fieldnames = ['timestamp', 'pitch']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
+
+with open('sitting_standing_data.csv', 'w', newline='') as csvfile:
+    fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
+    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+    writer.writeheader()
 
 # TODO create another file for sitting standing, think about the schema
 
@@ -29,20 +34,20 @@ def handle_telemetry(client, userdata, telemetry):
     
     payload = json.loads(telemetry.payload.decode())
 
-    if 'Orientation' in payload.keys():
-        OR = payload.get('Orientation')
+    if 'pitch' in payload.keys():
+        OR = payload.get('pitch')
         print('Posture telemetry received: ' , OR)
 
-        # with open('posture_data.csv', 'a', newline='') as csvfile:
-        #     fieldnames = ['timestamp', 'pitch']
-        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        #     # save to csv
-        #     writer.writerow(payload)
+        with open('posture_data.csv', 'a', newline='') as csvfile:
+            fieldnames = ['timestamp', 'pitch']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            # save to csv
+            writer.writerow(payload)
 
         short_buzz_command = json.dumps({'buzzer' : 'short_buzz'})
         long_buzz_command = json.dumps({'buzzer' : 'long_buzz'})
 
-        # orientation pitch thresholds
+        # pitch orientation thresholds
         pitch_th_small = -65.00
         pitch_th_big = -45.00
         if OR > pitch_th_small and OR < pitch_th_big:
@@ -64,12 +69,13 @@ def handle_telemetry(client, userdata, telemetry):
         elif ST[1] > 7.9 and ST[0] < 9.0:
             state = 0 # sitting
             print('Sitting state!')
-            
-        # with open('sitting_standing_data.csv', 'a', newline='') as csvfile:
-        #     fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
-        #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        #     # save to csv
-        #     writer.writerow(payload, state)
+        
+        payload_send = {'timestamp': payload['timestamp'], 'Acc_y':payload['Sitting'][0], 'Acc_z':payload['Sitting'][1], 'state': state}
+        with open('sitting_standing_data.csv', 'a', newline='') as csvfile:
+            fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'state']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            # save to csv
+            writer.writerow(payload_send)
 
 
 mqtt_client.subscribe(client_posturetelemetry_topic, qos=1)

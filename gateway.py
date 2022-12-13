@@ -68,7 +68,6 @@ def handle_command(client, userdata, message):
 
 mqtt_client.subscribe(client_command_topic, qos=1)
 mqtt_client.on_message = handle_command
-mqtt_client.on
 
 while True:
     # reset telemetry
@@ -94,7 +93,7 @@ while True:
 
         telemetry = json.dumps({
             'timestamp' : ts,  
-            'Orientation': posture_telemetry_float[7]})
+            'pitch': posture_telemetry_float[7]})
 
         print('Sending posture telemetry ', telemetry)
         mqtt_client.publish(client_posturetelemetry_topic, telemetry, qos=1)
@@ -113,5 +112,5 @@ while True:
 
         # TODO how to decouple the sending?
 
-    time.sleep(2)
+    time.sleep(3)
 
