@@ -43,9 +43,13 @@ def handle_command(client, userdata, message):
     payload = json.loads(message.payload.decode())
     # commands
     print('Message received: ' , payload)
-    if payload['buzzer'] == 'buzz': 
-        # s.write(b'lightOn\n')
-        print('BUZZ')
+    if 'buzzer' in payload.keys():
+        if payload['buzzer'] == 'short_buzz': 
+            # s.write(b'lightOn\n')
+            print('short BUZZ')
+        if payload['buzzer'] == 'long_buzz': 
+            # s.write(b'lightOn\n')
+            print('long BUZZ')
 
 mqtt_client.subscribe(client_command_topic, qos=1)
 mqtt_client.on_message = handle_command
@@ -61,7 +65,7 @@ while True:
     posture_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n\r'
     sitting_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n\r'
 
-    # read telemetry coming from arduino
+    # read telemetry coming from smartphone sensors
     # posture_arduino_telemetry = s_posture.readline
     # sitting_arduino_telemetry = s_sitting.readline
 
@@ -79,7 +83,7 @@ while True:
 
         telemetry = json.dumps({
             'timestamp' : ts,  
-            'Orientation': posture_telemetry_float[6:]})
+            'Orientation': posture_telemetry_float[7]})
 
         print('Sending posture telemetry ', telemetry)
         mqtt_client.publish(client_posturetelemetry_topic, telemetry, qos=1)
@@ -98,7 +102,7 @@ while True:
 
         telemetry = json.dumps({
             'timestamp' : ts,  
-            'Orientation': posture_telemetry_float[1:]})
+            'Sitting': sitting_telemetry_float[1:3]})
 
         print('Sending sitting/standing telemetry ', telemetry)
         mqtt_client.publish(client_sittingtelemetry_topic, telemetry, qos=1)
