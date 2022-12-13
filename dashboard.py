@@ -1,90 +1,60 @@
-import time
-import json
-from datetime import datetime
+import streamlit as st
+import pandas as pd
+import numpy as np
 
-import numpy as np  # np mean, np random
-import pandas as pd  # read csv, df manipulation
-import plotly.express as px  # interactive charts
-import streamlit as st  # 🎈 data web app development
-import paho.mqtt.client as mqtt
+st.set_page_config(layout="wide")
 
-def handle_led_mode():
-    st.session_state.led_mode = st.session_state.led_mode_value
-def handle_freq():
-    st.session_state.freq = st.session_state.freq_value
-def handle_brightness():
-    st.session_state.brightness = st.session_state.bright_value
+original_title = '<h1 style= font-weight: bold; color:Blue; font-size: 20px;">Smart Posture</h1>'
+st.markdown(original_title, unsafe_allow_html=True)
 
-def initialize_session():
-    if 'led_mode' not in st.session_state:
-        st.session_state.led_mode = 'off'
-    if 'brightness' not in st.session_state:
-        st.session_state.brightness = 10
-    if 'freq' not in st.session_state:
-        st.session_state.freq = '1'
-    if 'led_mode_value' not in st.session_state:
-        st.session_state.led_mode_value = 'off'
-    if 'freq_value' not in st.session_state:
-        st.session_state.freq_value = 1
-    if 'bright_value' not in st.session_state:
-        st.session_state.bright_value = 0
+col1, col2, col3, col4 = st.columns(4)
 
-initialize_session()
-
-def parse_values(led_mode, brightness, frequency):
-    return json.dumps({'led' : led_mode, 'brightness' : brightness, 'blinkFrequency' : frequency})
-
-def send_commands(led_mode, brightness, frequency):
-    # gotten from https://www.guidgen.com/
-    client_id = '278320da-7c3d-4236-905c-4518170a814f'
-
-    client_command_topic = client_id + '/command'
-
-    mqtt_client = mqtt.Client(client_id + 'dashboard')
-    mqtt_client.connect('test.mosquitto.org')
-
-    mqtt_client.loop_start()
-
-    commands = parse_values(led_mode, brightness, frequency)
-
-    mqtt_client.publish(client_command_topic, commands, qos=1)
+standing_title = '<h3 style= font-weight: bold; ">Standing hours</h3>'
+standing_hours = '<h5 style= font-weight: bold; ">8 hr</h5>'
+sitting_title = '<h3 style= font-weight: bold; ">Sitting hours</h3>'
+sitting_hours = '<h5 style= font-weight: bold; ">8 hr</h5>'
+g_posture_title = '<h3 style= font-weight: bold; ">Good Posture</h3>'
+g_posture_hours = '<h5 style= font-weight: bold; ">5 hr</h5>'
+b_posture_title = '<h3 style= font-weight: bold; ">Bad Posture</h3>'
+b_posture_hours = '<h5 style= font-weight: bold; ">4 hr</h5>'
 
 
-st.set_page_config(
-    page_title="Real-Time IoT Dashboard",
-    page_icon="💡",
-    layout="wide",
-)
+with col1:
+   st.markdown(standing_title, unsafe_allow_html=True)
+   st.markdown(standing_hours, unsafe_allow_html=True)
+with col2:
+   st.markdown(sitting_title, unsafe_allow_html=True)
+   st.markdown(sitting_hours, unsafe_allow_html=True)
 
-# dashboard title
-st.title("💡 Real-Time Night Detector Dashboard")
+with col3:
+   st.markdown(g_posture_title, unsafe_allow_html=True)
+   st.markdown(g_posture_hours, unsafe_allow_html=True)
 
-# @st.experimental_memo
-def get_data() -> pd.DataFrame:
-    return pd.read_csv('light_data.csv', delimiter=',')
+with col4:
+   st.markdown(b_posture_title, unsafe_allow_html=True)
+   st.markdown(b_posture_hours, unsafe_allow_html=True)
 
-df = get_data()
+#chart 1
+chart_data = pd.DataFrame(
+    np.random.randn(20, 3),
+    columns=['a', 'b', 'c'])
 
-r, l = st.columns([3, 1])
-n, m, p = st.columns([1, 2, 1])
+#chart 2
+data = np.random.randn(10, 1)
 
-with l:
-    df
-with r:
-    fig = px.line(df, x="timestamp", y="light", title='Light values over time')
-    st.plotly_chart(fig, use_container_width=True)
+Standing_title = '<h3 style= font-weight: bold; color:Blue; font-size: 15px;">Standing</h3>'
+Sitting_title = '<h3 style= font-weight: bold; color:Blue; font-size: 15px;">Sitting</h3>'
 
-with m:
-    st.session_state.led_mode = st.radio(
-        "LED Mode",
-        options=["off", "on", "blink"], on_change= handle_led_mode, key='led_mode_value'
-    )
-    st.slider('LED brightness', 0, 500, 10, key='bright_value', on_change=handle_brightness)
-    st.select_slider('LED blinking frequency', options=[1, 2, 3, 4, 5], key='freq_value', on_change=handle_freq)
-    send = st.button('Send commands')
+tab1, tab2 = st.tabs(["Standing", "Sitting"])
 
-    if send:
-        send_commands(st.session_state.led_mode, st.session_state.brightness, st.session_state.freq)
-# st.button('Refresh')
-time.sleep(5)
-st.experimental_rerun()
+with tab1:
+   st.header("Standing")
+   st.line_chart(chart_data)
+
+with tab2:
+   st.header("Sitting")
+   st.line_chart(data)
+
+
+
+
