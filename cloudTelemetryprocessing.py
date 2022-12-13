@@ -3,17 +3,22 @@ import paho.mqtt.client as mqtt
 import json
 import csv
 import pandas as pd
+import os
 
+path_posture = 'posture_data.csv'
+path_sitting = 'sitting_standing_data.csv'
 
-with open('posture_data.csv', 'w', newline='') as csvfile:
-    fieldnames = ['timestamp', 'pitch']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
+if not (os.path.exists(path_posture)):
+    with open('posture_data.csv', 'w', newline='') as csvfile:
+        fieldnames = ['timestamp', 'pitch']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
-with open('sitting_standing_data.csv', 'w', newline='') as csvfile:
-    fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    writer.writeheader()
+if not (os.path.exists(path_sitting)):
+    with open('sitting_standing_data.csv', 'w', newline='') as csvfile:
+        fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
 
 # TODO create another file for sitting standing, think about the schema
 
