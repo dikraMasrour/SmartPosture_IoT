@@ -60,4 +60,3 @@ def mean_score(selected_df):
     else:
         return None
 
-# print(mean_posture_score())

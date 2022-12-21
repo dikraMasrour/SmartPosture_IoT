@@ -1,90 +1,70 @@
-import time
-import json
-from datetime import datetime
-
+import streamlit as st
 import numpy as np  # np mean, np random
 import pandas as pd  # read csv, df manipulation
 import plotly.express as px  # interactive charts
-import streamlit as st  # 🎈 data web app development
-import paho.mqtt.client as mqtt
-
-def handle_led_mode():
-    st.session_state.led_mode = st.session_state.led_mode_value
-def handle_freq():
-    st.session_state.freq = st.session_state.freq_value
-def handle_brightness():
-    st.session_state.brightness = st.session_state.bright_value
-
-def initialize_session():
-    if 'led_mode' not in st.session_state:
-        st.session_state.led_mode = 'off'
-    if 'brightness' not in st.session_state:
-        st.session_state.brightness = 10
-    if 'freq' not in st.session_state:
-        st.session_state.freq = '1'
-    if 'led_mode_value' not in st.session_state:
-        st.session_state.led_mode_value = 'off'
-    if 'freq_value' not in st.session_state:
-        st.session_state.freq_value = 1
-    if 'bright_value' not in st.session_state:
-        st.session_state.bright_value = 0
-
-initialize_session()
-
-def parse_values(led_mode, brightness, frequency):
-    return json.dumps({'led' : led_mode, 'brightness' : brightness, 'blinkFrequency' : frequency})
-
-def send_commands(led_mode, brightness, frequency):
-    # gotten from https://www.guidgen.com/
-    client_id = '278320da-7c3d-4236-905c-4518170a814f'
-
-    client_command_topic = client_id + '/command'
-
-    mqtt_client = mqtt.Client(client_id + 'dashboard')
-    mqtt_client.connect('test.mosquitto.org')
-
-    mqtt_client.loop_start()
-
-    commands = parse_values(led_mode, brightness, frequency)
-
-    mqtt_client.publish(client_command_topic, commands, qos=1)
+import plotly.graph_objects as go
+from datetime import datetime
+import time 
+import backend
 
 
 st.set_page_config(
-    page_title="Real-Time IoT Dashboard",
-    page_icon="💡",
-    layout="wide",
+   page_icon= '🤸‍♂️',
+   page_title= "Smart Posture Monitor",
+   layout="wide",
 )
 
 # dashboard title
-st.title("💡 Real-Time Night Detector Dashboard")
+st.title("🤸‍♂️Smart Posture Monitor")
 
-# @st.experimental_memo
-def get_data() -> pd.DataFrame:
-    return pd.read_csv('light_data.csv', delimiter=',')
-
-df = get_data()
-
-r, l = st.columns([3, 1])
-n, m, p = st.columns([1, 2, 1])
-
+r, l = st.columns(2)
 with l:
-    df
+   end = st.date_input('End date')
 with r:
-    fig = px.line(df, x="timestamp", y="light", title='Light values over time')
-    st.plotly_chart(fig, use_container_width=True)
+   start = st.date_input('Start date')
 
-with m:
-    st.session_state.led_mode = st.radio(
-        "LED Mode",
-        options=["off", "on", "blink"], on_change= handle_led_mode, key='led_mode_value'
-    )
-    st.slider('LED brightness', 0, 500, 10, key='bright_value', on_change=handle_brightness)
-    st.select_slider('LED blinking frequency', options=[1, 2, 3, 4, 5], key='freq_value', on_change=handle_freq)
-    send = st.button('Send commands')
+backend.get_data()
+df = backend.data_filtering(start, end)
+good_pos = backend.good_posture_summary_stats(start, end)
+mean_score = backend.mean_posture_score(start, end)
 
-    if send:
-        send_commands(st.session_state.led_mode, st.session_state.brightness, st.session_state.freq)
-# st.button('Refresh')
+if (good_pos == None):
+   st.header('No data for the selected time period. Try again.')
+
+
+
+if (good_pos != None):
+
+      col0, col1, col2, col3= st.columns([1, 2, 2, 1])
+
+
+      with col1:
+         if good_pos >= 60:
+            st.metric(label='Good Posture', value=str(good_pos) + str('%'), delta='Great, Keep going !')
+         else:
+            st.metric(label='Good Posture', value=str(good_pos) + str('%'), delta='-You can do better.')
+      with col2:
+         if mean_score >= 3:
+            st.metric(label='Mean posture score', value=str(mean_score), delta="That's good posture !")
+         else:
+            st.metric(label='Mean posture score', value=str(mean_score), delta='-You can do better.')
+      line, pie = st.columns([3, 1])
+      with line:
+         # timestamp to datetime
+         datetime_stamp = [datetime.fromtimestamp(ts) for ts in df['timestamp']]
+         fig = px.line(df, x=datetime_stamp, y="score") # TODO ADD LEGEND FOR SCORE
+         fig.update_layout(xaxis_title="Time", yaxis_title="Posture score")
+         fig.add_hline(y=4, line_width=2, line_dash="dash", line_color="green")
+         fig.add_hline(y=1, line_width=2, line_dash="dash", line_color="red")
+         # fig.add_hline()
+         st.plotly_chart(fig, use_container_width=True)
+         st.write('Posture scored on a scale of 1-4, 4 begin a great posture')
+      with pie:
+         fig_pie = go.Figure(data=[go.Pie(labels=['Good posture', 'Bad posture'], values=[good_pos, 100-good_pos], hole=.4)])
+         fig = px.pie(values=[good_pos, 100-good_pos], names=['Good posture', 'Bad posture'], hover_name=['Good posture', 'Bad posture'])
+         st.plotly_chart(fig_pie, use_container_width=True)
+
+
+
 time.sleep(5)
 st.experimental_rerun()
