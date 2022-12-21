@@ -5,15 +5,15 @@ from datetime import datetime
 import random
 import serial 
 
-# define serial connection over bluetooth and its params
-# s_posture = serial.Serial(
-#         port='/dev/ttyS0', # using the defined rfcomm0 as the port
-#         baudrate = 9600,  
-#         parity=serial.PARITY_NONE,
-#         stopbits=serial.STOPBITS_ONE,
-#         bytesize=serial.EIGHTBITS,
-#         timeout=1
-# )
+define serial connection over bluetooth and its params
+s_posture = serial.Serial(
+        port='/dev/ttyS0', # using the defined rfcomm0 as the port
+        baudrate = 9600,  
+        parity=serial.PARITY_NONE,
+        stopbits=serial.STOPBITS_ONE,
+        bytesize=serial.EIGHTBITS,
+        timeout=1
+)
 
 
 # gotten from https://www.guidgen.com/
@@ -42,8 +42,8 @@ def parse_telemetry(binary_telemetry):
     parse_telemetry_float = [float(x) for x in parse_telemetry]
     
     # TODO delete !
-    rand_pitch = round(random.uniform(-85.0000, -20.0000), 4)
-    parse_telemetry_float[7] = rand_pitch
+    # rand_pitch = round(random.uniform(-85.0000, -20.0000), 4)
+    # parse_telemetry_float[7] = rand_pitch
 
     return parse_telemetry_float
 
