@@ -2,84 +2,69 @@ import streamlit as st
 import numpy as np  # np mean, np random
 import pandas as pd  # read csv, df manipulation
 import plotly.express as px  # interactive charts
+import plotly.graph_objects as go
 from datetime import datetime
 import time 
+import backend
+
 
 st.set_page_config(
-    page_title="Smart Posture Monitor",
-    layout="wide",
+   page_icon= '🤸‍♂️',
+   page_title= "Smart Posture Monitor",
+   layout="wide",
 )
 
-# TODO get data after backend processing
-def get_data() -> pd.DataFrame:
-    return pd.read_csv('posture_data.csv', delimiter=',')
-
-df = get_data()
-
-
 # dashboard title
-st.title("Smart Posture Monitor")
+st.title("🤸‍♂️Smart Posture Monitor")
 
-#chart 1
-chart_data = pd.DataFrame(
-    np.random.randn(20, 3),
-    columns=['a', 'b', 'c'])
+r, l = st.columns(2)
+with l:
+   end = st.date_input('End date')
+with r:
+   start = st.date_input('Start date')
 
-#chart 2
-data = np.random.randn(10, 1)
+backend.get_data()
+df = backend.data_filtering(start, end)
+good_pos = backend.good_posture_summary_stats(start, end)
+mean_score = backend.mean_posture_score(start, end)
 
-tab1, tab2 = st.tabs(["Standing data", "Sitting data"])
-
-
-with tab1:
-   r, l = st.columns(2)
-   col0, col1, col2, col3= st.columns([1, 2, 2, 2])
-
-   st.header('Your standing stats')
-   with l:
-      st.date_input('End date')
-   with r:
-      st.date_input('Start date')
-   
-   with col1:
-      st.metric(label='Standing time', value='35min', delta='good')
-   with col2:
-      st.metric(label='Good Posture', value='60%', delta='15%')
-   with col3:
-      st.metric(label='Bad Posture', value='40%', delta='-1%')
-
-   # timestamp to datetime
-   datetime_stamp = [datetime.fromtimestamp(ts) for ts in df['timestamp']]
-   fig = px.line(df, x=datetime_stamp, y="pitch")
-   fig.update_layout(xaxis_title="Time", yaxis_title="Posture pitch")
-   st.plotly_chart(fig, use_container_width=True)
+if (good_pos == None):
+   st.header('No data for the selected time period. Try again.')
 
 
-with tab2:
-   r, l = st.columns(2)
-   col0, col1, col2, col3= st.columns([1, 2, 2, 2])
 
-   st.header('Your sitting stats')
-   with l:
-      st.date_input('End date', key='sit_start')
-   with r:
-      st.date_input('Start date', key='sit_end')
-   with col1:
-      st.metric(label='Sitting time', value='1h', delta='too much', delta_color='inverse')
-   with col2:
-      st.metric(label='Good Posture', value='60%', delta='15%')
-   with col3:
-      st.metric(label='Bad Posture', value='40%', delta='-1%')
+if (good_pos != None):
+
+      col0, col1, col2, col3= st.columns([1, 2, 2, 1])
 
 
-   # timestamp to datetime
-   datetime_stamp = [datetime.fromtimestamp(ts) for ts in df['timestamp']]
-   fig = px.line(df, x=datetime_stamp, y="pitch")
-   fig.update_layout(xaxis_title="Time", yaxis_title="Posture pitch")
+      with col1:
+         if good_pos >= 60:
+            st.metric(label='Good Posture', value=str(good_pos) + str('%'), delta='Great, Keep going !')
+         else:
+            st.metric(label='Good Posture', value=str(good_pos) + str('%'), delta='-You can do better.')
+      with col2:
+         if mean_score >= 3:
+            st.metric(label='Mean posture score', value=str(mean_score), delta="That's good posture !")
+         else:
+            st.metric(label='Mean posture score', value=str(mean_score), delta='-You can do better.')
+      line, pie = st.columns([3, 1])
+      with line:
+         # timestamp to datetime
+         datetime_stamp = [datetime.fromtimestamp(ts) for ts in df['timestamp']]
+         fig = px.line(df, x=datetime_stamp, y="score") # TODO ADD LEGEND FOR SCORE
+         fig.update_layout(xaxis_title="Time", yaxis_title="Posture score")
+         fig.add_hline(y=4, line_width=2, line_dash="dash", line_color="green")
+         fig.add_hline(y=1, line_width=2, line_dash="dash", line_color="red")
+         # fig.add_hline()
+         st.plotly_chart(fig, use_container_width=True)
+         st.write('Posture scored on a scale of 1-4, 4 begin a great posture')
+      with pie:
+         fig_pie = go.Figure(data=[go.Pie(labels=['Good posture', 'Bad posture'], values=[good_pos, 100-good_pos], hole=.4)])
+         fig = px.pie(values=[good_pos, 100-good_pos], names=['Good posture', 'Bad posture'], hover_name=['Good posture', 'Bad posture'])
+         st.plotly_chart(fig_pie, use_container_width=True)
 
-   st.plotly_chart(fig, use_container_width=True)
 
 
-# TODO how to run cold path seperately : implement counter that runs function after x runs
-# time.sleep(5)
-# st.experimental_rerun()
+time.sleep(5)
+st.experimental_rerun()

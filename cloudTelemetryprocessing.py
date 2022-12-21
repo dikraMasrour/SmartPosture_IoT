@@ -8,25 +8,18 @@ import os
 path_posture = 'posture_data.csv'
 path_sitting = 'sitting_standing_data.csv'
 
+# create csv file if not exist
 if not (os.path.exists(path_posture)):
     with open('posture_data.csv', 'w', newline='') as csvfile:
-        fieldnames = ['timestamp', 'pitch', 'posture']
+        fieldnames = ['timestamp', 'pitch', 'posture', 'score']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-
-if not (os.path.exists(path_sitting)):
-    with open('sitting_standing_data.csv', 'w', newline='') as csvfile:
-        fieldnames = ['timestamp', 'Acc_y', 'Acc_z', 'State']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-
-# TODO create another file for sitting standing, think about the schema
 
 # gotten from https://www.guidgen.com/
 client_id = '278320da-7c3d-4236-905c-4518170a814f'
 
+# mqtt topics
 client_posturetelemetry_topic = client_id + '/postureTelemetry'
-client_sittingtelemetry_topic = client_id + '/sittingTelemetry'
 client_command_topic = client_id + '/command'
 
 
@@ -35,12 +28,19 @@ mqtt_client.connect('test.mosquitto.org')
 
 mqtt_client.loop_start()
 
+
+
 def handle_telemetry(client, userdata, telemetry):
-    
+    '''
+    Gets posture telemetry and processes it:
+    - classifies good and bad posture based on pitch thresholds
+    - score the posture on a scale of 1-4
+    '''
     payload = json.loads(telemetry.payload.decode())
 
     if 'pitch' in payload.keys():
         posture = 1 # takes 1 if good 0 if bad
+        score = 4 # very good -80 -75
 
         OR = payload.get('pitch')
         print('Posture telemetry received: ' , OR)
@@ -54,18 +54,23 @@ def handle_telemetry(client, userdata, telemetry):
         if OR > pitch_th_small and OR < pitch_th_big:
             print('Sending short buzz command ', short_buzz_command)
             posture = 0
+            score = 2 # okay
             mqtt_client.publish(client_command_topic, short_buzz_command, qos=1)
         elif OR > pitch_th_big:
             print('Sending long buzz command ', long_buzz_command)
             posture = 0
+            score = 1 # bad
             mqtt_client.publish(client_command_topic, long_buzz_command, qos=1)
+        elif OR < pitch_th_small and OR > -75:
+            score = 3 # good
 
         payload_send1 = {'timestamp': payload['timestamp'],
                         'pitch':payload['pitch'], 
-                        'posture':posture}
+                        'posture':posture,
+                        'score': score}
 
         with open('posture_data.csv', 'a', newline='') as csvfile:
-            fieldnames = ['timestamp', 'pitch', 'posture']
+            fieldnames = ['timestamp', 'pitch', 'posture', 'score']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             # save to csv
             writer.writerow(payload_send1)
@@ -96,7 +101,6 @@ def handle_telemetry(client, userdata, telemetry):
 
 
 mqtt_client.subscribe(client_posturetelemetry_topic, qos=1)
-mqtt_client.subscribe(client_sittingtelemetry_topic, qos=1)
 mqtt_client.on_message = handle_telemetry
 
 

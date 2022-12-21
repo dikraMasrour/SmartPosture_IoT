@@ -7,18 +7,8 @@ import serial
 
 # define serial connection over bluetooth and its params
 # s_posture = serial.Serial(
-#         port='/dev/rfcomm0', # using the defined rfcomm0 as the port
-#         baudrate = 9600,
-#         parity=serial.PARITY_NONE,
-#         stopbits=serial.STOPBITS_ONE,
-#         bytesize=serial.EIGHTBITS,
-#         timeout=1
-# )
-
-# define serial connection over bluetooth and its params
-# s_sitting = serial.Serial(
-#         port='/dev/rfcomm0', # using the defined rfcomm0 as the port
-#         baudrate = 9600,
+#         port='/dev/ttyS0', # using the defined rfcomm0 as the port
+#         baudrate = 9600,  
 #         parity=serial.PARITY_NONE,
 #         stopbits=serial.STOPBITS_ONE,
 #         bytesize=serial.EIGHTBITS,
@@ -40,6 +30,7 @@ mqtt_client.loop_start()
 
 def parse_telemetry(binary_telemetry):
     # decode received bytes into string
+    # print(type(binary_telemetry))
     str_message = binary_telemetry.decode('utf-8-sig')
     # remove newline symbols
     str_message = str_message.replace('\n', '')
@@ -49,6 +40,10 @@ def parse_telemetry(binary_telemetry):
     parse_telemetry = parse_telemetry.replace(',5,0,0,0,0', '')
     parse_telemetry = parse_telemetry.split(',')
     parse_telemetry_float = [float(x) for x in parse_telemetry]
+    
+    # TODO delete !
+    rand_pitch = round(random.uniform(-85.0000, -20.0000), 4)
+    parse_telemetry_float[7] = rand_pitch
 
     return parse_telemetry_float
 
@@ -70,6 +65,7 @@ mqtt_client.subscribe(client_command_topic, qos=1)
 mqtt_client.on_message = handle_command
 
 while True:
+   
     # reset telemetry
     posture_arduino_telemetry = None
     sitting_arduino_telemetry = None
@@ -79,38 +75,29 @@ while True:
     # getting the timestamp
     ts = datetime.timestamp(dt)
 
-    posture_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n\r'
-    sitting_arduino_telemetry = b'(0.08255,8.1236,1.0009,-0.07,-0.025,0.14,54.32451,-7.231,0.48072,5,0,0,0,0)\n\r'
+    try :
+        # read telemetry coming from smartphone sensors
+        # posture_arduino_telemetry = s_posture.readline()
+        
+        posture_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n'
+        # if posture telemetry is received
+        if posture_arduino_telemetry != None:
+            if  (len(posture_arduino_telemetry) != 0):
+                posture_telemetry_float = parse_telemetry(posture_arduino_telemetry)
+                if len(posture_telemetry_float) == 9:
+                    telemetry = json.dumps({
+                        'timestamp' : ts,  
+                        'pitch': posture_telemetry_float[7]})
 
-    # read telemetry coming from smartphone sensors
-    # posture_arduino_telemetry = s_posture.readline
-    # sitting_arduino_telemetry = s_sitting.readline
+                    print('Sending posture telemetry ', telemetry)
+                    mqtt_client.publish(client_posturetelemetry_topic, telemetry, qos=1)
 
-    # if posture telemetry is received
-    if posture_arduino_telemetry != None: # TODO check if condition is correct
+                    time.sleep(5)
 
-        posture_telemetry_float = parse_telemetry(posture_arduino_telemetry)
+            else: continue
+        else: continue
+    except :
+        print('Serial Exception')
 
-        telemetry = json.dumps({
-            'timestamp' : ts,  
-            'pitch': posture_telemetry_float[7]})
 
-        print('Sending posture telemetry ', telemetry)
-        mqtt_client.publish(client_posturetelemetry_topic, telemetry, qos=1)
-
-    # if sitting/standing telemetry is received
-    if sitting_arduino_telemetry != None: # TODO check if condition is correct
-
-        sitting_telemetry_float = parse_telemetry(sitting_arduino_telemetry)
-
-        telemetry = json.dumps({
-            'timestamp' : ts,  
-            'Sitting': sitting_telemetry_float[1:3]}) # y and z axes of the accelerometer data
-
-        print('Sending sitting/standing telemetry ', telemetry)
-        mqtt_client.publish(client_sittingtelemetry_topic, telemetry, qos=1)
-
-        # TODO how to decouple the sending?
-
-    time.sleep(3) # TODO match with sending rate of posture telemetry 2s?
-
+        
