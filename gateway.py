@@ -5,7 +5,7 @@ from datetime import datetime
 import random
 import serial 
 
-define serial connection over bluetooth and its params
+# define serial connection over bluetooth and its params
 s_posture = serial.Serial(
         port='/dev/ttyS0', # using the defined rfcomm0 as the port
         baudrate = 9600,  
@@ -77,9 +77,9 @@ while True:
 
     try :
         # read telemetry coming from smartphone sensors
-        # posture_arduino_telemetry = s_posture.readline()
+        posture_arduino_telemetry = s_posture.readline()
         
-        posture_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n'
+        # posture_arduino_telemetry = b'(0.08255,0.51266,9.83899,-0.07,-0.02625,0.14,54.32451,-75.9826,0.48072,5,0,0,0,0)\n'
         # if posture telemetry is received
         if posture_arduino_telemetry != None:
             if  (len(posture_arduino_telemetry) != 0):
@@ -92,12 +92,11 @@ while True:
                     print('Sending posture telemetry ', telemetry)
                     mqtt_client.publish(client_posturetelemetry_topic, telemetry, qos=1)
 
-                    time.sleep(5)
+                    time.sleep(2)
 
             else: continue
         else: continue
     except :
         print('Serial Exception')
-
-
+    
         

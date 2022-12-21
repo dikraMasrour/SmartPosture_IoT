@@ -105,5 +105,5 @@ mqtt_client.on_message = handle_telemetry
 
 
 while True:
-    time.sleep(3) # match with gateway
+    time.sleep(3)
     

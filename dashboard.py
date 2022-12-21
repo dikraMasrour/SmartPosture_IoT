@@ -46,7 +46,6 @@ if (good_pos != None):
 
       col0, col1, col2, col3= st.columns([1, 2, 2, 1])
 
-      good_pos = 70
       with col1:
          if good_pos >= 60:
             st.metric(label='Good Posture', value=str(good_pos) + str('%'), delta='Great, Keep going !')
@@ -77,11 +76,11 @@ if (good_pos != None):
          st.plotly_chart(fig, use_container_width=True)
          st.write('Posture scored on a scale of 1-4, 4 begin a great posture')
       with pie:
-         fig_pie = go.Figure(data=[go.Pie(labels=['Good posture', 'Bad posture'], values=[good_pos, 100-good_pos], hole=.4)])
-         fig = px.pie(values=[good_pos, 100-good_pos], names=['Good posture', 'Bad posture'], hover_name=['Good posture', 'Bad posture'])
+         fig_pie = go.Figure(data=[go.Pie(labels=['Bad posture', 'Good posture'], values=[good_pos, 100-good_pos], hole=.4)])
+         fig = px.pie(values=[good_pos, 100-good_pos], names=['Bad posture', 'Good posture'], hover_name=['Bad posture', 'Good posture'])
          st.plotly_chart(fig_pie, use_container_width=True)
 
 
 
-time.sleep(5)
+time.sleep(3)
 st.experimental_rerun()
